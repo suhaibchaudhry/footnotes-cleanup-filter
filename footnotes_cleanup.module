@@ -1,0 +1,69 @@
+<?php
+/**
+ * @file
+ * Implements CK Editor cleanup for footnotes module.
+ * Author: Asad Hasan
+ */
+
+/**
+ * Implements hook_filter_info().
+ *
+ * Here we define the different filters provided by the module. For this
+ * example, time_filter is a very static and simple replacement, but it requires
+ * some preparation of the string because of the special html tags < and >. The
+ * foo_filter is more complex, including its own settings and inline tips.
+ */
+function footnotes_cleanup_filter_info() {
+  $filters['cleanup'] = array(
+    'title' => t('Cleanup Footnotes'),
+    'description' => t('Clean up ckeditor tags that break bb tag like footnote tags.'),
+    'process callback'  => '_footnotes_cleanup_filter_cleanup_process',
+    'tips callback' => '_footnotes_cleanup_filter_cleanup_tips'
+  );
+
+  return $filters;
+}
+
+/**
+ * Foo filter process callback.
+ *
+ * The actual filtering is performed here. The supplied text should be returned,
+ * once any necessary substitutions have taken place. The example just replaces
+ * foo with our custom defined string in the settings page.
+ */
+function _footnotes_cleanup_filter_cleanup_process($text, $filter, $format) {
+  $tags = array(
+    'search' => array(),
+    'replace' => array()
+  );
+
+  _footnotes_cleanup_filter_pattern_extract($text, '/\[\/?(\<.*\>)fn\]/', $tags);
+  _footnotes_cleanup_filter_pattern_extract($text, '/\[\/?fn(\<.*\>)\]/', $tags, false);
+  return str_replace($tags['search'], $tags['replace'], $text);
+}
+
+function _footnotes_cleanup_filter_pattern_extract($text, $pattern, &$tags, $tag_inside = true) {
+  $matches = array();
+
+  preg_match_all($pattern, $text, $matches);
+  foreach($matches[0] as $match_id => $match) {
+    $tags['search'][] = $match;
+    if($tag_inside) {
+      $tags['replace'][] = $matches[1][$match_id].str_replace($matches[1][$match_id], '', $match);
+    } else {
+      $tags['replace'][] = str_replace($matches[1][$match_id], '', $match).$matches[1][$match_id];
+    }
+  }
+}
+
+/**
+ * Filter tips callback for foo filter.
+ *
+ * The tips callback allows filters to provide help text to users during the
+ * content editing process. Short tips are provided on the content editing
+ * screen, while long tips are provided on a separate linked page. Short tips
+ * are optional, but long tips are highly recommended.
+ */
+function _footnotes_cleanup_filter_cleanup_tips($filter, $format, $long = FALSE) {
+    return t('WYSIWYG styling of footnote tags will be cleaned up, i.e.: [fn<span>] will become [fn]<span> to avoid breaking footnotes while maintaining formatting.');
+}

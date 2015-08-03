@@ -1,0 +1,4 @@
+name = Footnotes Cleanup
+description = Cleans up HTML tags inside of footnote tags.
+core = 7.x
+package = Utilities - UI To UX
