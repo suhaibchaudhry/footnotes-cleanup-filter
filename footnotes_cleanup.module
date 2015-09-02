@@ -37,39 +37,23 @@ function _footnotes_cleanup_filter_cleanup_process($text, $filter, $format) {
     'replace' => array()
   );
 
-  _footnotes_cleanup_filter_pattern_extract($text, '/\[((([^f\/\]]([f]{2,})?[^n\/\]]?))*)\/?((([^f\/\]]([f]{2,})?[^n\/\]]?))*)fn((([^f\/\]]([f]{2,})?[^n\/\]]?))*)\]/', $tags);
+  _footnotes_cleanup_filter_pattern_extract($text, '/\[\/?(\<.*\>)fn\]/', $tags);
+  _footnotes_cleanup_filter_pattern_extract($text, '/\[\/?fn(\<.*\>)\]/', $tags, false);
   return str_replace($tags['search'], $tags['replace'], $text);
 }
 
-function _footnotes_cleanup_filter_pattern_extract($text, $pattern, &$tags) {
+function _footnotes_cleanup_filter_pattern_extract($text, $pattern, &$tags, $tag_inside = true) {
   $matches = array();
 
   preg_match_all($pattern, $text, $matches);
   foreach($matches[0] as $match_id => $match) {
     $tags['search'][] = $match;
-    $partial = html_entity_decode(_footnotes_cleanup_max_substr($matches, $match_id));
-    if(strlen($partial) > 0) {
-      if(strpos($partial, '</') !== FALSE) {
-        $tags['replace'][] = $partial.str_replace($partial, '', $match);
-      } else {
-        $tags['replace'][] = str_replace($partial, '', $match).$partial;
-      }
+    if($tag_inside) {
+      $tags['replace'][] = $matches[1][$match_id].str_replace($matches[1][$match_id], '', $match);
+    } else {
+      $tags['replace'][] = str_replace($matches[1][$match_id], '', $match).$matches[1][$match_id];
     }
   }
-}
-
-function _footnotes_cleanup_max_substr($matches, $match_id) {
-  $substr = '';
-  foreach($matches as $group_id => $group) {
-      if($group_id > 0) {
-        $str = $matches[$group_id][$match_id];
-        if(strlen($str) > strlen($substr)) {
-          $substr = $str;
-        }
-      }
-  }
-
-  return $substr;
 }
 
 /**
